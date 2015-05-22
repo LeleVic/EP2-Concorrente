@@ -16,6 +16,7 @@ void setShouldCompareTerms(bool newValue);
 void setShouldPrintCosine(bool newValue);
 
 void initializeSemaphores();
+void initializeBarrier();
 void initializeEnvironment();
 void startThreads();
 void *threadFunction(void *id);

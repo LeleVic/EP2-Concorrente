@@ -11,9 +11,10 @@
 
 using namespace std;
 
-// TODO: Printing cossine every turn should be conditional
+// TODO: Verificar se está sempre terminando, se não tem nenhuma barreira que fica travada!
+// (Acho que está, mas não tenho certeza)
 
-// TODO: Colocar a biblioteca de números grandes
+// TODO: Alterar a quantidade de casas que são impressas de 1000 para 100000.
 
 // TODO: Análise de desempenho
 
@@ -22,7 +23,7 @@ int main(int argc, const char *argv[]) {
     int numThreads;
     int precisao;
     bool sequencial;
-    unsigned long precision = 300; // FIXME: 700000
+    unsigned long precision = 700000;
     mpf_set_default_prec(precision);
 
     if (argc < 5 || argc > 6)
@@ -60,24 +61,22 @@ int main(int argc, const char *argv[]) {
     }
 
     setQ(numThreads); // Seta a quantidade de threads que serão criadas
-    //mpf_init(x);
-    //mpf_init(error);
+    mpf_init(x); 
+    mpf_init(error);
     setX(atof(argv[4])); // Seta o valer de x que é para ser calculado.    
     setError(pow(10, -precisao));
-    //setError(0.000000001); // FIXME: pow(10, precisao)
 
     if (!sequencial) {
         initializeSemaphores();
+        initializeBarrier();
         initializeEnvironment();
         startThreads();
         joinThreads();
         printInformation();
     }
-    else
-    {
+    else {
         sequencialCalc();
         printInformation();
-        // calcula de forma sequencial
     }
 
     return 0;
@@ -136,7 +135,7 @@ void sequencialCalc()
 
         cout << "Iteracao: " << n+1 << "\n";
         cout << "cosine: ";
-        mpf_out_str(stdout, 10, 0, cosine);
+        mpf_out_str(stdout, 10, 1000, cosine); // FIXME : 100000
         cout << "\n\n";
 
         n++;

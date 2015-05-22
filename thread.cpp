@@ -12,18 +12,14 @@ using namespace std;
 
 
 unsigned long q = 1;
-mpf_t x;
-mpf_t error;
-
 vector<pthread_t> threads;
 
-//vector<mpf_t> terms;
-mpf_t *terms;
-
+mpf_t x;
+mpf_t error;
 mpf_t cosine;
 
+pthread_barrier_t barrier_term; // Sincroniza todas as threads apos o calculo do termo.
 vector<mutex *> arrive;
-
 condition_variable goCV;
 mutex goMutex;
 bool goReady;
@@ -56,8 +52,6 @@ void setQ(unsigned long newValue) {
 }*/
 
 void setX(double newValue) {
-    //x = newValue;
-    mpf_init(x);
     mpf_set_d(x, newValue);
 } 
 
@@ -66,9 +60,10 @@ void setX(double newValue) {
 }*/
 
 void setError(double newValue) {
-    //error = newValue;
-    mpf_init(error);
     mpf_set_d(error, newValue);
+    /*cout << "\nERROR: ";
+    mpf_out_str(stdout, 10, 1000, error);
+    cout << "\n"; */
 }
 
 void setshouldPrintArrival(bool newValue) {
@@ -86,20 +81,6 @@ void setShouldPrintCosine(bool newValue) {
 void initializeEnvironment() {
     threads.clear();
 
-    //initializeMathWithPowerBase(x);
-
-    //terms.clear();
-    // Faz um vetor com malloc, pois se utilizar a classe vector dá erro no compilador!
-    terms = (mpf_t *) malloc(q * sizeof(mpf_t));
-    for (unsigned long i = 0; i < q; i++) {
-        mpf_t a;
-        mpf_init(a);
-        mpf_set(terms[i], a);
-        //terms.push_back(a);
-        //terms.push_back(0.0); // inicializa o termo que cada thread vai calcular com 0.
-    }
-
-    //cosine = 0;
     mpf_init(cosine);
     numberOfRounds = 0;
 
@@ -122,6 +103,9 @@ void startThreads() {
     }
 }
 
+void initializeBarrier() {
+	pthread_barrier_init(&barrier_term, NULL, q);
+}
 
 void initializeSemaphores() {
 
@@ -144,8 +128,6 @@ void *threadFunction(void *id) {
     unsigned long i = (unsigned long)id;
 
     double sign = -1.0;
-    //double numerator;
-    //double denominator;
     mpf_t s;
     mpf_t numerator;
     mpf_t denominator;
@@ -162,40 +144,44 @@ void *threadFunction(void *id) {
 
     mpf_t lastCosine;
     mpf_init(lastCosine);
-    //double lastCosine = 0;
 
     unsigned long n;
 
     for (n = i; true; n += q) {
-        sign = (!(n % 2)) * 2 - 1;
+
+    	sign = (!(n % 2)) * 2 - 1;
 
         power(numerator, x, 2*n);
         factorial(denominator, 2*n);
         mpf_div(d, numerator, denominator);
         mpf_set_d(s, sign);
         mpf_mul(termo, s, d);
-        //terms[i] = sign * numerator / denominator;
-        //mpf_set(terms[i], aux);
-
-        //mpf_abs(aux, terms[i]);
-
-        // Estou usando a variável termo, pois o vetor terms[i], não estava funcionando.
+ 
         mpf_abs(aux, termo);
-        // Não está funcionando muito bem. As vezes não termina!
-        // impreme esse done, mas não vai pra frente!!
+ 
         if (shouldCompareTerms && mpf_cmp(aux, error) < 0) {
-            //cout << "\n AUX";
-            //mpf_out_str(stdout, 10, 0, cosine);
-            //cout << "\n\n";
-            cout << "DONE\n";
+            //cout << "DONE " << i << "\n";
             done = true;
+        }
+
+        // Parece que está funcionando com essa barreira. Mas acho que deu problema uma vez.
+        //cout << "VALUE DONE = " << done << "\n";
+        //cout <<  "N = " << n << "\n";
+        pthread_barrier_wait(&barrier_term);
+
+        //cout << "VALUE DONE = " << done << "\n";
+
+        // POR QUE AS VEZES NAO ENTRA NESSE IF ???????
+        // Por que ele ainda está na volta anterior!!!
+
+       	if (done) {
+        	//cout << "DONE T: " << i << "\n";
+          	break;
         }
 
         // Região critica, atualizar o valor do cosseno.
         cosineMutex->lock();
-        //mpf_add(cosine, cosine, terms[i]);
         mpf_add(cosine, cosine, termo);
-        //cosine += terms[i];
         cosineMutex->unlock();
 
         // É a ultima thread da lista.
@@ -208,8 +194,6 @@ void *threadFunction(void *id) {
             // Faz P(arrive) para todas as threads.
             for (unsigned long i = 0; i < q - 1; i++)
                 arrive[i]->lock();
-
-            //updateMath();
 
             // Imprime as informacoes do encontro na barreira, 
             // se estivers setada essa opcao.
@@ -231,18 +215,22 @@ void *threadFunction(void *id) {
             }
 
             if (shouldPrintCosine) {
-                //cout << "cosine: " << cosine << "\n";
-                mpf_out_str(stdout, 10, 0, cosine);
+            	cout << "cosine: ";
+                mpf_out_str(stdout, 10, 1000, cosine); // FIXME: 100000
                 cout << "\n\n";
             }
 
-            // Nao entendi esse round e ready!!!!
             goRound = !goRound;
             goReady = goRound;
             goCV.notify_all();
 
-            if (done)
-                break;
+            //cout << "GO :" << i << "\n";
+
+            //if (done) {
+            //    cout << "DONE: " << i << "\n";
+            //    cout <<  "N = " << n << "\n";
+            //	break;
+            //}
 
         } else {
             unique_lock<mutex> lock(goMutex);
@@ -259,13 +247,20 @@ void *threadFunction(void *id) {
                 goCV.wait(lock, [] { return goReady; });
             }
 
-            if (done)
-                break;
+            //cout << "GO :" << i << "\n";
+
+            //if (done) {
+            //	cout << "DONE: " << i << "\n";
+            //	cout <<  "N = " << n << "\n";
+            //   	break;
+            //}
         }
+
+        //cout << "GO :" << i << "\n";
     }
 
     if (i == q - 1) {
-        numberOfRounds = (int) (n + 1)/4;
+        numberOfRounds = (int) (n + 1)/q;
     }
 
     mpf_clear(s);
@@ -299,8 +294,8 @@ void joinThreads() {
 void printInformation() {
     cout << "=========== Results ==========\n";
 
-    //cout << "Cosine = " << cosine << "\n";
-    mpf_out_str(stdout, 10, 100000, cosine);
+    cout << "Cosine = ";
+    mpf_out_str(stdout, 10, 1000, cosine); // FIX ME: 100000. O numero fica muito grande!!!!!
     cout << "\n\n";
 
     cout << "Number of rounds = " << numberOfRounds << "\n";
