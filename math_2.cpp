@@ -3,7 +3,8 @@
 
 using namespace std;
 
-
+/* Calcula o fatorial de x e retorna o valor em result.
+*/
 void factorial(mpf_t result, unsigned long x) {
 	
 	mpf_t aux;
@@ -20,7 +21,8 @@ void factorial(mpf_t result, unsigned long x) {
 	}
 }
 
-
+/* Calcula 'b' elevado a 'e' e retorna o valor em result.
+*/
 void power(mpf_t result, mpf_t b, double e) {
 
 	int i;
