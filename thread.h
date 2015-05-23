@@ -7,9 +7,7 @@
 
 unsigned long getQ();
 void setQ(unsigned long newValue);
-double getX();
-void setX(double newValue);
-double getError();
+void setX(const char *newValue);
 void setError(double newValue);
 void setshouldPrintArrival(bool newValue);
 void setShouldCompareTerms(bool newValue);

@@ -11,9 +11,6 @@
 
 using namespace std;
 
-// TODO: Verificar se está sempre terminando, se não tem nenhuma barreira que fica travada!
-// (Acho que está, mas não tenho certeza)
-
 // TODO: Alterar a quantidade de casas que são impressas de 1000 para 100000.
 
 // TODO: Análise de desempenho
@@ -21,8 +18,8 @@ using namespace std;
 int main(int argc, const char *argv[]) {
 
     int numThreads;
-    int precisao;
-    bool sequencial;
+    int precisao; // Qual a precisao do erro a ser usado. (10 elevado a -precisao)
+    bool sequencial; // Indica se é para calcular usando threads ou de forma sequencial.
     unsigned long precision = 700000;
     mpf_set_default_prec(precision);
 
@@ -33,7 +30,7 @@ int main(int argc, const char *argv[]) {
     }
 
     if (atoi(argv[1]) == 0)
-        numThreads = thread::hardware_concurrency();
+        numThreads = thread::hardware_concurrency(); // obtem a quantidade de núcleos do compuratador.
     else
         numThreads = atoi(argv[1]);
 
@@ -63,8 +60,8 @@ int main(int argc, const char *argv[]) {
     setQ(numThreads); // Seta a quantidade de threads que serão criadas
     mpf_init(x); 
     mpf_init(error);
-    setX(atof(argv[4])); // Seta o valer de x que é para ser calculado.    
-    setError(pow(10, -precisao));
+    setX(argv[4]); // Seta o valer de x que é para ser calculado.
+    setError(pow(10, -precisao)); // Seta o valor do error.
 
     if (!sequencial) {
         initializeSemaphores();

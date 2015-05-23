@@ -19,7 +19,8 @@ mpf_t error;
 mpf_t cosine;
 
 pthread_barrier_t barrier_term; // Sincroniza todas as threads apos o calculo do termo.
-vector<mutex *> arrive;
+// Variaveis utilizadas na barreira para sincronizar a comparacao dos valores do cosseno
+vector<mutex *> arrive; 
 condition_variable goCV;
 mutex goMutex;
 bool goReady;
@@ -27,14 +28,15 @@ bool goRound;
 
 bool done; // indica que acabou de calcular o cosseno
 
-mutex *cosineMutex;
-mutex *printArrivalMutex;
+mutex *cosineMutex; // Semaforo para escrever na variável cosseno.
+mutex *printArrivalMutex; // Semaforo para escrever na tela.
 
 bool isFirstArrival = true;
 bool shouldPrintArrival = false;
 bool shouldCompareTerms = false;
 bool shouldPrintCosine = false;
-unsigned long numberOfRounds;
+unsigned long numberOfRounds; // salva a quantidade de vezes que as threads se encontraram
+                              // na barreira.
 
 void *threadFunction(void *id);
 void printArrival(unsigned long i);
@@ -47,23 +49,12 @@ void setQ(unsigned long newValue) {
     q = newValue;
 }
 
-/*double getX() {
-    return x;
-}*/
-
-void setX(double newValue) {
-    mpf_set_d(x, newValue);
-} 
-
-/*double getError() {
-    return error;
-}*/
+void setX(const char *newValue) {
+    mpf_set_str(x, newValue, 10);
+}
 
 void setError(double newValue) {
     mpf_set_d(error, newValue);
-    /*cout << "\nERROR: ";
-    mpf_out_str(stdout, 10, 1000, error);
-    cout << "\n"; */
 }
 
 void setshouldPrintArrival(bool newValue) {
@@ -86,9 +77,7 @@ void initializeEnvironment() {
 
     goRound = true;
     goReady = true;
-
     done = false;
-
     isFirstArrival = true;
 }
 
@@ -158,40 +147,32 @@ void *threadFunction(void *id) {
         mpf_mul(termo, s, d);
  
         mpf_abs(aux, termo);
- 
-        if (shouldCompareTerms && mpf_cmp(aux, error) < 0) {
-            //cout << "DONE " << i << "\n";
+        // Compara o termo calculado com erro, se a opcao passada for a m.
+        if (shouldCompareTerms && (mpf_cmp(aux, error) < 0)) {
             done = true;
         }
 
-        // Parece que está funcionando com essa barreira. Mas acho que deu problema uma vez.
-        //cout << "VALUE DONE = " << done << "\n";
-        //cout <<  "N = " << n << "\n";
-        pthread_barrier_wait(&barrier_term);
-
-        //cout << "VALUE DONE = " << done << "\n";
-
-        // POR QUE AS VEZES NAO ENTRA NESSE IF ???????
-        // Por que ele ainda está na volta anterior!!!
-
-       	if (done) {
-        	//cout << "DONE T: " << i << "\n";
-          	break;
-        }
+        // Barreira para sincronizar o calculo dos termos.
+        pthread_barrier_wait(&barrier_term);  
 
         // Região critica, atualizar o valor do cosseno.
         cosineMutex->lock();
         mpf_add(cosine, cosine, termo);
         cosineMutex->unlock();
 
-        // É a ultima thread da lista.
+        // Termina a execucao da thread.
+        if (done && shouldCompareTerms) {
+            break;
+        }
+
         if (i == q - 1) {    
 
             if (shouldPrintArrival) {
                 printArrival(i);
             }
 
-            // Faz P(arrive) para todas as threads.
+            // Espera todas as outras threads (threads 0 a q-2),
+            // avisarem que chegaram na barreira.
             for (unsigned long i = 0; i < q - 1; i++)
                 arrive[i]->lock();
 
@@ -204,7 +185,7 @@ void *threadFunction(void *id) {
 
             // Se o termino do programa eh para ser comparando os dois
             // ultimos conessos calculados, então apenas uma thread compara, na
-            // barreira de sincronizacao
+            // barreira de sincronizacao.
             if (!shouldCompareTerms) {
                 mpf_sub (aux, cosine, lastCosine);
                 mpf_abs(aux, aux);
@@ -220,43 +201,37 @@ void *threadFunction(void *id) {
                 cout << "\n\n";
             }
 
+            // Libera as outras threads para continuar.
             goRound = !goRound;
             goReady = goRound;
             goCV.notify_all();
-
-            //cout << "GO :" << i << "\n";
-
-            //if (done) {
-            //    cout << "DONE: " << i << "\n";
-            //    cout <<  "N = " << n << "\n";
-            //	break;
-            //}
 
         } else {
             unique_lock<mutex> lock(goMutex);
 
             if (shouldPrintArrival)
                 printArrival(i);
-
-            // Organizacao da barreria.
+            
+            // Espera mudar o valor de goRound.
+            // A thread q-1, ira mudar o valor de goRound quando liberar 
+            // as outras threads para continuar sua execucao.
             if (goRound) {
+                // Avisa que chegou na barreira.
                 arrive[i]->unlock();
+                // Espera poder continuar.
                 goCV.wait(lock, [] { return !goReady; });
             } else {
+                // Avisa que chegou na barreira.
                 arrive[i]->unlock();
+                // Espera poder continuar.
                 goCV.wait(lock, [] { return goReady; });
             }
-
-            //cout << "GO :" << i << "\n";
-
-            //if (done) {
-            //	cout << "DONE: " << i << "\n";
-            //	cout <<  "N = " << n << "\n";
-            //   	break;
-            //}
         }
 
-        //cout << "GO :" << i << "\n";
+        // Termina a execucao da thread.
+        if (done && !shouldCompareTerms) {
+            break;
+        }        
     }
 
     if (i == q - 1) {
