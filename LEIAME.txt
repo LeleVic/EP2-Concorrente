@@ -1,0 +1,71 @@
+EP2 - MAC0438 - Programação Concorrente
+Alunos: 
+Helena Almeida Victoretti - 7991124
+Vinicius Vendramini - 7991103
+
+
+Os códigos fontes desse ep consistem em: main.cpp, main.h, math.cpp, math.h, 
+thread.cpp e thread.h, além de um arquivo Makefile.
+
+Para utilizar números com maior precisão do que os tipos nativos da linguagem
+C++, utiliza-se a biblioteca GMP.
+Para baixar a biblioteca é preciso rodar o comando abaixo no terminal:
+	apt-get install libgmp-dev
+
+Para criar o programa executável basta utilizar o comando make no terminal.
+Uma observação importante é que para compilar o programa é preciso ter uma
+versão do g++ maior ou igual que a versão 4.7.
+
+Para executar o programa a entrada deverá ser:
+	q [f|m] p x (d|s)
+	
+onde:
+	q: um valor inteiro maior ou igual a zero. Quando for igual a zero 
+	   a quantidade de threads criadas é igual a quantidade de núcleos do
+	   computador. Quando diferente de zero a quantidade de threads é igual
+	   ao valor recebido.
+        f|m: se o caracter recebido for f, o programa termina quando o módulo
+             da diferença entre o valor do cossenos de duas rodadas consecutivas 
+             for menor que o valor passado no terceiro argumento. Se o caracter 
+             recebido for m, o programa termina quando alguma thread calcular um 
+             termo menor, em módulo, do que o valor do terceiro argumento.
+        p: um valor inteiro que definir a precisão do cálculo. Por exemplo se o
+           valor recebido for 110 e o segundo argumento for m, então o programa
+           termina se alguma alguma thread calcular um termo menor em módulo que
+           10^-110.
+        x: o valor que será calculado o cosseno.
+        d|s: Argumento opcional. 
+             	Se não for passado nenhum dos dois valores, então p programa
+             deverá imprimir ao término da execução o número de rodadas, que é
+             a quantidade que as threads se encontram na barreira e o valor 
+             encontrado do cos(x) com alta precisão. O valor do cosseno é 
+             impresso com 100 mil casas decimais.
+        	Se for passado o caracter d, então a cada rodada, ordem com que as 
+             threads chegaram na barreira; a cada rodada, valor parcial do cos(x)
+             o valor parcial do cosseno é impresso com 1000 casas decimais;
+	     ao término da execucao, número de rodadas, que é a quantidade que as 
+	     threads se encontram na barreira e o valor encontrado do cos(x) com 
+	     alta precisão. O valor do cosseno é impresso com 100 mil casas decimais.
+	     	Se for passado o caracter s, então o programa calcula o cosseno de
+	     forma sequencial, sem a utilização de threads. O programa imprime: os
+	     valores parciais do cos(x) calculados a cada novo termo calculado, esses
+	     valores são impressos com 1000 casas decimais; ao término da execucao, o 
+	     valor encontrado do cos(x), esse valor é impresso com 100 mil casas 
+	     decimais; ao término da execucao, a quantidade de termos calculados.
+
+
+	O programa utiliza duas barreiras diferentes:
+	Uma delas é a barreira da biblioteca pthread.h, pthread_barrier, essa barreira 
+é implementada utilizando ??
+	A outra foi implementada por nós utilizando semáforos da classe <mutex> e a 
+classe <condition_variable> do C++. A classe <condition_variable> é uma implementação 
+em C++ do <await(cond);>.
+
+
+		
+
+
+ 
+
+
+
