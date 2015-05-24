@@ -197,7 +197,7 @@ void *threadFunction(void *id) {
 
             if (shouldPrintCosine) {
             	cout << "cosine: ";
-                mpf_out_str(stdout, 10, 1000, cosine); // FIXME: 100000
+                mpf_out_str(stdout, 10, 1000, cosine); 
                 cout << "\n\n";
             }
 
@@ -270,7 +270,7 @@ void printInformation() {
     cout << "=========== Results ==========\n";
 
     cout << "Cosine = ";
-    mpf_out_str(stdout, 10, 1000, cosine); // FIX ME: 100000. O numero fica muito grande!!!!!
+    mpf_out_str(stdout, 10, 100000, cosine); 
     cout << "\n\n";
 
     cout << "Number of rounds = " << numberOfRounds << "\n";

@@ -11,14 +11,12 @@
 
 using namespace std;
 
-// TODO: Alterar a quantidade de casas que são impressas de 1000 para 100000.
-
 // TODO: Análise de desempenho
 
 int main(int argc, const char *argv[]) {
 
     int numThreads;
-    int precisao; // Qual a precisao do erro a ser usado. (10 elevado a -precisao)
+    int precisao; // A precisao do erro a ser usado. (10 elevado a -precisao)
     bool sequencial; // Indica se é para calcular usando threads ou de forma sequencial.
     unsigned long precision = 700000;
     mpf_set_default_prec(precision);
@@ -132,7 +130,7 @@ void sequencialCalc()
 
         cout << "Iteracao: " << n+1 << "\n";
         cout << "cosine: ";
-        mpf_out_str(stdout, 10, 1000, cosine); // FIXME : 100000
+        mpf_out_str(stdout, 10, 1000, cosine);
         cout << "\n\n";
 
         n++;
